@@ -356,10 +356,6 @@ h1 {
   color: #4e795f
 }
 
-.balance-note {
-  white-space: nowrap
-}
-
 .metric-description {
   margin: 19px 0 0;
   font-size: 11px;
@@ -790,9 +786,6 @@ h2 {
   .secondary-value {
     font-size: 33px
   }
-  .balance-note {
-    display: none
-  }
   .metric-unit {
     font-size: 13px
   }
@@ -899,9 +892,6 @@ h2 {
   }
   .balance-card .metric-bottom {
     margin-top: 13px
-  }
-  .balance-note {
-    display: block
   }
   .secondary-value {
     font-size: 31px;
