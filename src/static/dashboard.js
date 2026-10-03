@@ -23,11 +23,13 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
   const rangeButtons = [...document.querySelectorAll("[data-days]")];
   const namespace = "http://www.w3.org/2000/svg";
   const day = 86400000;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
     timeZone: "Asia/Shanghai", month: "2-digit", day: "2-digit",
   });
   let activeRange = "30";
   let chartState = null;
+  let curveAnimation = null;
 
   function svgElement(tag, attributes, text) {
     const element = document.createElementNS(namespace, tag);
@@ -66,7 +68,9 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
     chartState.selected = index;
   }
 
-  function drawChart() {
+  function drawChart({animate = false} = {}) {
+    curveAnimation?.cancel();
+    curveAnimation = null;
     hideTooltip();
     chart.replaceChildren();
     chartState = null;
@@ -115,24 +119,34 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
     }
     const path = points.map((point, index) => (index ? "L" : "M") + x(point).toFixed(2) + " " + y(point.balance).toFixed(2)).join(" ");
     const bottom = height - plot.bottom;
-    chart.append(
+    const series = svgElement("g", {class: "chart-series", "aria-hidden": "true"});
+    series.append(
       svgElement("path", {d: path + " L" + x(points[points.length - 1]).toFixed(2) + " " + bottom + " L" + x(points[0]).toFixed(2) + " " + bottom + " Z", class: "chart-area"}),
       svgElement("path", {d: path, class: "chart-line"}),
       svgElement("circle", {cx: x(points[points.length - 1]), cy: y(points[points.length - 1].balance), r: 3.5, class: "chart-point"}),
     );
+    chart.append(series);
+    if (animate && !reducedMotion.matches && typeof series.animate === "function") {
+      series.style.transformOrigin = "0 " + bottom + "px";
+      curveAnimation = series.animate(
+        [{transform: "scaleY(0)"}, {transform: "scaleY(1)"}],
+        {duration: 460, easing: "cubic-bezier(0.22, 1, 0.36, 1)"},
+      );
+    }
     document.getElementById("chart-period").textContent = dateFormatter.format(new Date(start)).replace("/", ".") + " — " + dateFormatter.format(new Date(end)).replace("/", ".");
     chartState = {points, width, height, plot, x, y, selected: points.length - 1};
   }
 
   for (const button of rangeButtons) {
     button.addEventListener("click", () => {
+      if (activeRange === button.dataset.days) return;
       activeRange = button.dataset.days;
       for (const item of rangeButtons) item.setAttribute("aria-pressed", String(item === button));
-      drawChart();
+      drawChart({animate: true});
     });
   }
   chart.addEventListener("pointermove", (event) => {
-    if (!chartState) return;
+    if (!chartState || curveAnimation?.playState === "running") return;
     const position = event.clientX - chart.getBoundingClientRect().left;
     let closest = 0;
     for (let index = 1; index < chartState.points.length; index += 1) {
@@ -143,11 +157,12 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
   chart.addEventListener("pointerleave", hideTooltip);
   chart.addEventListener("blur", hideTooltip);
   chart.addEventListener("keydown", (event) => {
-    if (!chartState || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    if (!chartState || curveAnimation?.playState === "running" || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
     event.preventDefault();
     showReading(Math.max(0, Math.min(chartState.points.length - 1, chartState.selected + (event.key === "ArrowRight" ? 1 : -1))));
   });
-  new ResizeObserver(drawChart).observe(container);
+  new ResizeObserver(() => drawChart()).observe(container);
+  reducedMotion.addEventListener("change", () => drawChart());
 
   const daysInput = document.getElementById("target-days");
   const priceInput = document.getElementById("electricity-price");
