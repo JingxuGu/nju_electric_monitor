@@ -5,6 +5,9 @@ on:
     branches: [master]
     paths:
       - 'src/web_panel.py'
+      - 'src/templates/**'
+      - 'src/static/**'
+      - 'tests_web/**'
       - 'src/build_site.py'
       - 'requirements-web.txt'
       - 'data/electricity_data.csv'
@@ -43,6 +46,17 @@ jobs:
 
       - name: Install dashboard dependencies
         run: python -m pip install -r requirements-web.txt
+
+      - name: Check dashboard data handling
+        run: python -m unittest discover -s tests_web
+
+      - name: Set up Node for calculator checks
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check recharge estimates
+        run: node --test tests_web/test_recharge.cjs
 
       - name: Generate the website
         run: python src/build_site.py

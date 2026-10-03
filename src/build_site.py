@@ -1,8 +1,10 @@
 """Export the existing Flask dashboard as a standalone GitHub Pages site."""
 
 import argparse
+import shutil
 from pathlib import Path
 
+import web_panel
 from web_panel import app
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -21,6 +23,8 @@ def build_site(output_dir: Path) -> Path:
     destination = output_dir / "index.html"
     temporary = output_dir / "index.html.tmp"
     temporary.write_text(html, encoding="utf-8")
+    shutil.copytree(ROOT / "src" / "static", output_dir / "static", dirs_exist_ok=True)
+    shutil.copyfile(web_panel.CSV_PATH, output_dir / "electricity_data.csv")
     temporary.replace(destination)
     (output_dir / ".nojekyll").touch()
     return destination
