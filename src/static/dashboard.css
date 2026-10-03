@@ -212,34 +212,46 @@ h1 {
   margin: 11px 0 0
 }
 
-.button {
-  display: inline-flex;
+.dorm-label {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 40px;
-  padding: 0 15px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 550;
-  white-space: nowrap;
-  transition: border-color .15s,background .15s
-}
-
-.button svg {
-  width: 16px;
-  height: 16px
-}
-
-.button-outline {
-  border: 1px solid #dce5df;
+  gap: 13px;
+  padding: 15px 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
   background: var(--surface);
-  color: #52645a
+  flex-shrink: 0
 }
 
-.button-outline:hover {
-  background: var(--green-light);
-  border-color: #bbd0c4
+.dorm-label svg {
+  width: 23px;
+  height: 23px;
+  flex-shrink: 0;
+  color: var(--green)
+}
+
+.dorm-campus {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0
+}
+
+.dorm-room {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--ink);
+  margin: 5px 0 0
+}
+
+.dorm-room strong {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .8px;
+  color: var(--green)
 }
 
 .metrics {
@@ -788,7 +800,10 @@ h2 {
     font-size: 10px
   }
   .intro {
-    padding-top: 35px
+    padding-top: 35px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px
   }
   h1 {
     font-size: 30px
@@ -841,8 +856,9 @@ h2 {
   }
   .intro {
     padding: 30px 0 25px;
-    align-items: flex-start;
-    gap: 12px
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px
   }
   .eyebrow {
     font-size: 10px;
@@ -854,21 +870,11 @@ h2 {
   }
   .intro-copy {
     font-size: 11px;
-    max-width: 225px;
     line-height: 1.9;
     margin-top: 8px
   }
-  .intro .button {
-    font-size: 0;
-    width: 35px;
-    height: 35px;
-    min-width: 35px;
-    padding: 0;
-    margin-top: 27px
-  }
-  .intro .button svg {
-    width: 16px;
-    height: 16px
+  .dorm-label {
+    padding: 13px 16px
   }
   .metrics {
     grid-template-columns: 1fr 1fr;
