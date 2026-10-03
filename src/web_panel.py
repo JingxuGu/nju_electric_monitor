@@ -13,6 +13,7 @@ TEMPLATE = """
 <html lang="zh-cn">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>南京大学电费监控面板</title>
     <style>
         body { font-family: 'Segoe UI', '微软雅黑', Arial, sans-serif; margin: 0; background: linear-gradient(120deg, #0f2027, #2c5364 80%); min-height: 100vh; }
@@ -79,9 +80,9 @@ TEMPLATE = """
 <body>
     <div class="container">
         <h1>南京大学电费监控面板</h1>
-        <div class="desc">展示最近电费数据及变化趋势</div>
+        <div class="desc">展示最近电费数据及变化趋势<br>数据采集时间：{{ last_updated }}（北京时间）</div>
         <div class="chart-block">
-            <button class="reload-btn" onclick="location.reload()">更新/重新加载</button>
+            <button class="reload-btn" onclick="location.reload()">刷新页面</button>
             {{ plot_div|safe }}
         </div>
         <table>
@@ -128,6 +129,7 @@ TEMPLATE = """
 def index():
     df = pd.read_csv(CSV_PATH)
     df['time'] = pd.to_datetime(df['time'])  # 确保时间列为datetime类型
+    last_updated = df['time'].max().strftime('%Y-%m-%d %H:%M:%S')
     df_sorted = df.sort_values('time')
     # Generate plot for 最近20次电量变化曲线
     recent_20 = df_sorted.tail(20).copy()
@@ -236,7 +238,7 @@ def index():
     rows = df_sorted.to_dict(orient="records")
     visible_rows = rows[:20]
     hidden_rows = rows[20:]
-    return render_template_string(TEMPLATE, visible_rows=visible_rows, hidden_rows=hidden_rows, plot_div=recent_20_plot_div + plot_div)
+    return render_template_string(TEMPLATE, visible_rows=visible_rows, hidden_rows=hidden_rows, plot_div=recent_20_plot_div + plot_div, last_updated=last_updated)
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -24,6 +24,40 @@
 
 > 📖 **完整使用指南**：请查看 [GUIDE.md](GUIDE.md)，包含详细的安装部署、配置说明、验证机制详解、故障排除和开发指南。
 
+## 🌐 发布到 power.jingxugu.com
+
+网页沿用 `src/web_panel.py` 的曲线和历史表格，GitHub Pages 托管生成后的静态 HTML，无需常驻服务器。网页显示最新数据的采集时间；“刷新页面”读取已发布的数据，不会启动学校系统查询。
+
+### 首次配置
+
+1. 打开仓库 **Settings → Pages**，将 **Build and deployment → Source** 设为 **GitHub Actions**。
+2. 在同一页面的 **Custom domain** 填写 `power.jingxugu.com` 并保存。
+3. 在域名 DNS 管理中添加 **CNAME**：名称 `power`，目标 `jingxugu.github.io`，不要包含仓库路径。使用 Cloudflare 时先选择 **DNS only（仅 DNS）**。
+4. DNS 验证和 HTTPS 证书就绪后，在 Pages 设置中启用 **Enforce HTTPS**。
+5. 在 **Actions → Deploy electricity dashboard → Run workflow** 手动运行首次发布。
+
+自定义 Actions 发布不需要 `CNAME` 文件；域名在 Pages 设置中管理。官方说明：
+[Pages 自动发布](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)、
+[自定义域名](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site)。
+
+### 自动更新
+
+`.github/workflows/deploy-pages.yml` 在定时采集工作流 **Auto Monitor Schedule** 成功结束后运行，也支持网页代码或 CSV 更新触发，以及手动运行。它读取 `master` 分支的最新 CSV；采集或数据推送出现问题时，页面的采集时间可用于识别旧数据。
+
+网站构建只需 Flask、pandas 和 Plotly，不需要安装浏览器、OCR 模型或提供学校/邮件凭据。只发布 `_site/`，不会把配置文件和运行日志放进网站。
+
+### 本地生成和预览
+
+```bash
+python -m venv .venv-web
+source .venv-web/bin/activate
+python -m pip install -r requirements-web.txt
+python src/build_site.py
+python -m http.server 8000 --bind 127.0.0.1 --directory _site
+```
+
+浏览器打开 `http://127.0.0.1:8000/`。Windows 用户可用 `.venv-web\Scripts\activate` 激活环境。
+
 ## 🤖Github Actions 自动运行
 
 本项目已集成 Github Actions 自动定时监控与数据更新，无需本地部署即可自动采集和推送电量数据。
