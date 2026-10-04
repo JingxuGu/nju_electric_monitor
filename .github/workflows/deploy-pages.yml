@@ -50,13 +50,13 @@ jobs:
       - name: Check dashboard data handling
         run: python -m unittest discover -s tests_web
 
-      - name: Set up Node for calculator checks
+      - name: Set up Node for dashboard checks
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Check recharge estimates
-        run: node --test tests_web/test_recharge.cjs
+      - name: Check recharge estimates and date ranges
+        run: node --test tests_web/*.cjs
 
       - name: Generate the website
         run: python src/build_site.py

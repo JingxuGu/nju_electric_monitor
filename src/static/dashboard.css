@@ -435,6 +435,146 @@ h2 {
   background: #e9efeb
 }
 
+.range-selector {
+  position: relative;
+  flex-shrink: 0
+}
+
+.date-range-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  width: 360px;
+  max-width: calc(100vw - 76px);
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 10px 32px #172c251a;
+  transform-origin: top right
+}
+
+.date-range-popover:not([hidden]) {
+  animation: date-range-enter .22s cubic-bezier(.22,1,.36,1) both
+}
+
+@keyframes date-range-enter {
+  from {opacity: 0; transform: translateY(-6px) scale(.98)}
+  to {opacity: 1; transform: translateY(0) scale(1)}
+}
+
+.date-range-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px
+}
+
+.date-range-heading h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600
+}
+
+.range-close {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  transition: background .15s,color .15s
+}
+
+.range-close:hover {
+  background: #e9efeb;
+  color: var(--green)
+}
+
+.range-close svg {
+  width: 16px;
+  height: 16px
+}
+
+.date-range-fields {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 12px;
+  margin-top: 12px
+}
+
+.date-range-fields label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 11px;
+  color: #5c7063
+}
+
+.date-range-fields input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 8px;
+  border: 1px solid #dfe7e2;
+  border-radius: 8px;
+  background: #f8faf9;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums
+}
+
+.date-range-fields input:focus-visible {
+  outline: 3px solid #91b9a4;
+  outline-offset: 2px;
+  border-color: var(--green)
+}
+
+.date-range-fields input[aria-invalid=true] {
+  border-color: #b84d41
+}
+
+.range-error {
+  margin: 8px 0 0;
+  color: #b84d41;
+  font-size: 11px;
+  line-height: 1.7
+}
+
+.date-range-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 9px;
+  margin-top: 14px
+}
+
+.date-range-actions>span {
+  font-size: 10px;
+  color: var(--muted)
+}
+
+.range-apply {
+  min-height: 32px;
+  padding: 7px 12px;
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  background: var(--green);
+  color: #fff;
+  font-size: 11px;
+  transition: background .15s
+}
+
+.range-apply:hover {
+  background: #1b5942
+}
+
 .chart-meta {
   display: flex;
   align-items: center;
@@ -935,7 +1075,16 @@ h2 {
   }
   .range-control button {
     flex: 1;
+    min-width: 0;
     min-height: 31px
+  }
+  .range-selector {
+    width: 100%
+  }
+  .date-range-popover {
+    width: 100%;
+    max-width: none;
+    padding: 14px
   }
   .panel-description {
     font-size: 10px
@@ -1003,6 +1152,13 @@ h2 {
   }
   .site-footer>span:last-child {
     display: none
+  }
+}
+
+@media(max-width:380px) {
+  .date-range-fields {
+    grid-template-columns: 1fr;
+    gap: 16px
   }
 }
 

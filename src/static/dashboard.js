@@ -10,7 +10,20 @@ function calculateRecharge({balance, average, price, days}) {
   return {amount, days: Math.max(0, balance + amount / price) / average};
 }
 
-if (typeof module !== "undefined" && module.exports) module.exports = {calculateRecharge};
+function selectDateRange(readings, startDate, endDate) {
+  const validDate = (value) => {
+    if (typeof value !== "string" || !/^(?!0000)\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const timestamp = Date.parse(value + "T00:00:00Z");
+    return Number.isFinite(timestamp) && new Date(timestamp).toISOString().slice(0, 10) === value;
+  };
+  if (!validDate(startDate) || !validDate(endDate) || startDate > endDate) return null;
+  // Include both calendar dates in Beijing time, regardless of the browser's timezone.
+  const start = Date.parse(startDate + "T00:00:00+08:00");
+  const endExclusive = Date.parse(endDate + "T00:00:00+08:00") + 86400000;
+  return readings.filter((row) => row.timestamp >= start && row.timestamp < endExclusive);
+}
+
+if (typeof module !== "undefined" && module.exports) module.exports = {calculateRecharge, selectDateRange};
 
 (() => {
   if (typeof document === "undefined") return;
@@ -20,7 +33,15 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
   const container = document.getElementById("chart-container");
   const tooltip = document.getElementById("chart-tooltip");
   const empty = document.getElementById("chart-empty");
+  const period = document.getElementById("chart-period");
   const rangeButtons = [...document.querySelectorAll("[data-days]")];
+  const customButton = document.getElementById("custom-range");
+  const rangeSelector = document.getElementById("range-selector");
+  const rangePopover = document.getElementById("date-range-popover");
+  const rangeForm = document.getElementById("date-range-form");
+  const startInput = document.getElementById("range-start");
+  const endInput = document.getElementById("range-end");
+  const rangeError = document.getElementById("range-error");
   const namespace = "http://www.w3.org/2000/svg";
   const day = 86400000;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -28,6 +49,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
     timeZone: "Asia/Shanghai", month: "2-digit", day: "2-digit",
   });
   let activeRange = "30";
+  let customRange = null;
   let chartState = null;
   let curveAnimation = null;
 
@@ -74,13 +96,23 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
     hideTooltip();
     chart.replaceChildren();
     chartState = null;
+    const customLabel = customRange ? customRange.startDate.replaceAll("-", ".") + " — " + customRange.endDate.replaceAll("-", ".") : "";
+    period.textContent = activeRange === "custom" ? customLabel : "等待首次采集";
     if (!readings.length) {
       empty.hidden = false;
-      document.getElementById("chart-period").textContent = "等待首次采集";
+      empty.textContent = "还没有电量记录，下一次采集后会显示在这里。";
+      chart.setAttribute("aria-label", "暂无电量记录");
       return;
     }
     const latest = readings[readings.length - 1].timestamp;
-    const points = activeRange === "all" ? readings : readings.filter((row) => row.timestamp >= latest - Number(activeRange) * day);
+    const points = activeRange === "custom" ? selectDateRange(readings, customRange.startDate, customRange.endDate) :
+      activeRange === "all" ? readings : readings.filter((row) => row.timestamp >= latest - Number(activeRange) * day);
+    if (!points.length) {
+      empty.hidden = false;
+      empty.textContent = "这个时间区间没有电量记录，试试其他日期。";
+      chart.setAttribute("aria-label", customLabel + "，没有电量记录");
+      return;
+    }
     empty.hidden = true;
     const width = container.clientWidth;
     const height = container.clientHeight;
@@ -133,18 +165,91 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
         {duration: 460, easing: "cubic-bezier(0.22, 1, 0.36, 1)"},
       );
     }
-    document.getElementById("chart-period").textContent = dateFormatter.format(new Date(start)).replace("/", ".") + " — " + dateFormatter.format(new Date(end)).replace("/", ".");
+    period.textContent = activeRange === "custom" ? customLabel : dateFormatter.format(new Date(start)).replace("/", ".") + " — " + dateFormatter.format(new Date(end)).replace("/", ".");
     chartState = {points, width, height, plot, x, y, selected: points.length - 1};
   }
 
   for (const button of rangeButtons) {
     button.addEventListener("click", () => {
+      closeRange();
       if (activeRange === button.dataset.days) return;
       activeRange = button.dataset.days;
       for (const item of rangeButtons) item.setAttribute("aria-pressed", String(item === button));
+      customButton.setAttribute("aria-pressed", "false");
       drawChart({animate: true});
     });
   }
+
+  const inputDate = (timestamp) => new Date(timestamp + 8 * 3600000).toISOString().slice(0, 10);
+  function clearRangeError() {
+    rangeError.textContent = "";
+    rangeError.hidden = true;
+    startInput.setAttribute("aria-invalid", "false");
+    endInput.setAttribute("aria-invalid", "false");
+  }
+  function closeRange({restoreFocus = false} = {}) {
+    rangePopover.hidden = true;
+    customButton.setAttribute("aria-expanded", "false");
+    if (restoreFocus) customButton.focus({preventScroll: true});
+  }
+  customButton.addEventListener("click", () => {
+    if (!rangePopover.hidden) {
+      closeRange({restoreFocus: true});
+      return;
+    }
+    const points = chartState?.points;
+    const latest = readings.length ? readings[readings.length - 1].timestamp : Date.now();
+    startInput.value = customRange?.startDate || inputDate(points?.[0].timestamp ?? latest - 30 * day);
+    endInput.value = customRange?.endDate || inputDate(points?.[points.length - 1].timestamp ?? latest);
+    clearRangeError();
+    rangePopover.hidden = false;
+    customButton.setAttribute("aria-expanded", "true");
+    startInput.focus({preventScroll: true});
+    rangePopover.scrollIntoView({block: "nearest", behavior: reducedMotion.matches ? "auto" : "smooth"});
+  });
+  for (const button of rangePopover.querySelectorAll("[data-close-range]")) {
+    button.addEventListener("click", () => closeRange({restoreFocus: true}));
+  }
+  document.addEventListener("pointerdown", (event) => {
+    if (!rangePopover.hidden && !rangeSelector.contains(event.target)) closeRange();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !rangePopover.hidden) {
+      event.preventDefault();
+      closeRange({restoreFocus: true});
+    }
+  });
+  document.addEventListener("focusin", (event) => {
+    if (!rangePopover.hidden && !rangeSelector.contains(event.target)) closeRange();
+  });
+  startInput.addEventListener("input", clearRangeError);
+  endInput.addEventListener("input", clearRangeError);
+  rangeForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    clearRangeError();
+    if (!startInput.validity.valid || !endInput.validity.valid) {
+      const invalidInput = !startInput.validity.valid ? startInput : endInput;
+      invalidInput.setAttribute("aria-invalid", "true");
+      rangeError.textContent = "请选择完整、有效的开始和结束日期。";
+      rangeError.hidden = false;
+      invalidInput.focus();
+      return;
+    }
+    if (selectDateRange(readings, startInput.value, endInput.value) === null) {
+      rangeError.textContent = "开始日期不能晚于结束日期。";
+      rangeError.hidden = false;
+      startInput.setAttribute("aria-invalid", "true");
+      endInput.setAttribute("aria-invalid", "true");
+      startInput.focus();
+      return;
+    }
+    customRange = {startDate: startInput.value, endDate: endInput.value};
+    activeRange = "custom";
+    for (const button of rangeButtons) button.setAttribute("aria-pressed", "false");
+    customButton.setAttribute("aria-pressed", "true");
+    closeRange({restoreFocus: true});
+    drawChart({animate: true});
+  });
   chart.addEventListener("pointermove", (event) => {
     if (!chartState || curveAnimation?.playState === "running") return;
     const position = event.clientX - chart.getBoundingClientRect().left;

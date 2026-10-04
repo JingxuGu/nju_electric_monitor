@@ -51,7 +51,23 @@
     </section>
 
     <section class="panel trend-panel" id="trend" aria-labelledby="trend-title">
-      <div class="panel-heading"><div><h2 id="trend-title">电量趋势</h2><p class="panel-description">时间在走，变化看得见。</p></div><div class="range-control" role="group" aria-label="图表时间范围"><button type="button" data-days="7" aria-pressed="false">7 天</button><button type="button" data-days="30" aria-pressed="true">30 天</button><button type="button" data-days="90" aria-pressed="false">90 天</button><button type="button" data-days="all" aria-pressed="false">全部</button></div></div>
+      <div class="panel-heading">
+        <div><h2 id="trend-title">电量趋势</h2><p class="panel-description">时间在走，变化看得见。</p></div>
+        <div class="range-selector" id="range-selector">
+          <div class="range-control" role="group" aria-label="图表时间范围"><button type="button" data-days="7" aria-pressed="false">7 天</button><button type="button" data-days="30" aria-pressed="true">30 天</button><button type="button" data-days="90" aria-pressed="false">90 天</button><button type="button" data-days="all" aria-pressed="false">全部</button><button type="button" id="custom-range" aria-pressed="false" aria-expanded="false" aria-haspopup="dialog" aria-controls="date-range-popover">自定义</button></div>
+          <div class="date-range-popover" id="date-range-popover" role="dialog" aria-labelledby="date-range-title" hidden>
+            <form id="date-range-form" novalidate>
+              <div class="date-range-heading"><h3 id="date-range-title">选择时间区间</h3><button class="range-close" type="button" data-close-range aria-label="关闭时间选择"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+              <div class="date-range-fields">
+                <div><label for="range-start">开始日期</label><input type="date" id="range-start" name="start" min="0001-01-01" max="9999-12-31" required aria-describedby="range-error"></div>
+                <div><label for="range-end">结束日期</label><input type="date" id="range-end" name="end" min="0001-01-01" max="9999-12-31" required aria-describedby="range-error"></div>
+              </div>
+              <p class="range-error" id="range-error" role="alert" hidden></p>
+              <div class="date-range-actions"><span>北京时间 · 含起止当天</span><button class="range-apply" type="submit">应用区间</button></div>
+            </form>
+          </div>
+        </div>
+      </div>
       <div class="chart-meta"><span><span class="legend-dot"></span>剩余电量 <span class="subtle">/ kWh</span></span><span id="chart-period" class="subtle"></span></div>
       <div class="chart-container" id="chart-container"><svg id="trend-chart" role="img" aria-label="剩余电量变化曲线，可用左右方向键查看各次读数" tabindex="0"></svg><div id="chart-tooltip" class="chart-tooltip" hidden></div><p id="chart-empty" class="chart-empty" {% if dashboard.count %}hidden{% endif %}>还没有电量记录，下一次采集后会显示在这里。</p></div>
       <div class="chart-footer"><span><span class="status-dot" id="freshness-dot"></span><span id="freshness-text">{% if dashboard.last_updated %}数据已记录{% else %}等待首次采集{% endif %}</span></span><span>最后采集：<time id="updated-at" datetime="{{ dashboard.latest_iso or '' }}">{{ dashboard.last_updated or '暂无' }}</time><span class="timezone">北京时间</span></span></div>
