@@ -24,21 +24,9 @@
 
 > 📖 **完整使用指南**：请查看 [GUIDE.md](GUIDE.md)，包含详细的安装部署、配置说明、验证机制详解、故障排除和开发指南。
 
-## 🌐 发布到 power.jingxugu.com
+## 🌐 网页生成与自动更新
 
 网页沿用 `src/web_panel.py` 的现代简约页面、交互趋势图和充值建议，GitHub Pages 托管生成后的静态 HTML，无需常驻服务器。网页显示最新数据的采集时间；“刷新页面”读取已发布的数据，不会启动学校系统查询。
-
-### 首次配置
-
-1. 打开仓库 **Settings → Pages**，将 **Build and deployment → Source** 设为 **GitHub Actions**。
-2. 在同一页面的 **Custom domain** 填写 `power.jingxugu.com` 并保存。
-3. 在域名 DNS 管理中添加 **CNAME**：名称 `power`，目标 `jingxugu.github.io`，不要包含仓库路径。使用 Cloudflare 时先选择 **DNS only（仅 DNS）**。
-4. DNS 验证和 HTTPS 证书就绪后，在 Pages 设置中启用 **Enforce HTTPS**。
-5. 在 **Actions → Deploy electricity dashboard → Run workflow** 手动运行首次发布。
-
-自定义 Actions 发布不需要 `CNAME` 文件；域名在 Pages 设置中管理。官方说明：
-[Pages 自动发布](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)、
-[自定义域名](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site)。
 
 ### 自动更新
 
