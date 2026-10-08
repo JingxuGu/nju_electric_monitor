@@ -315,7 +315,12 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
     daysInput.setAttribute("aria-invalid", String(!validDays));
     priceInput.setAttribute("aria-invalid", String(!validPrice));
     const plan = validDays && validPrice ? calculateRecharge({balance: data.balance, average: data.daily_usage, price, days}) : null;
-    rechargeAmount.textContent = plan ? String(plan.amount) : "—";
+    const covered = plan !== null && plan.amount === 0;
+    rechargeAmount.textContent = covered ? "无需充值" : plan ? String(plan.amount) : "—";
+    rechargeAmount.classList.toggle("is-covered", covered);
+    document.getElementById("recharge-currency").hidden = !plan || covered;
+    document.getElementById("recharge-caption").textContent = covered ? "现有电量已覆盖目标天数" : "补足目标天数，向上取整到 10 元";
+    document.getElementById("recharge-days-label").textContent = plan && !covered ? "充值后预估可用" : "当前预估可用";
     rechargeDays.textContent = plan ? plan.days.toFixed(1) : "—";
     if (!validDays) {
       rechargeStatus.textContent = "请输入 1–365 之间的整数天数。";

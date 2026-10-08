@@ -1171,3 +1171,8 @@ h2 {
     animation: none!important
   }
 }
+
+#recharge-amount.is-covered {
+  font-size: clamp(18px, 3vw, 26px);
+  letter-spacing: 0;
+}
