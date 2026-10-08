@@ -23,7 +23,35 @@ function selectDateRange(readings, startDate, endDate) {
   return readings.filter((row) => row.timestamp >= start && row.timestamp < endExclusive);
 }
 
-if (typeof module !== "undefined" && module.exports) module.exports = {calculateRecharge, selectDateRange};
+function bindChartPointerInteractions(chart, showAtPointer, hideTooltip) {
+  let activePointer = null;
+  chart.addEventListener("pointerdown", (event) => {
+    if (!event.isPrimary || event.button !== 0) return;
+    activePointer = event.pointerId;
+    if (event.pointerType !== "mouse") chart.setPointerCapture(event.pointerId);
+    showAtPointer(event);
+  });
+  chart.addEventListener("pointermove", (event) => {
+    if (event.pointerType === "mouse" || event.pointerId === activePointer) showAtPointer(event);
+  });
+  chart.addEventListener("pointerup", (event) => {
+    if (event.pointerId !== activePointer) return;
+    showAtPointer(event);
+    activePointer = null;
+  });
+  chart.addEventListener("pointercancel", (event) => {
+    if (event.pointerId !== activePointer) return;
+    activePointer = null;
+    hideTooltip();
+  });
+  chart.addEventListener("lostpointercapture", () => { activePointer = null; });
+  // Touch screens emit pointerleave after a tap. Keep the selected reading visible.
+  chart.addEventListener("pointerleave", (event) => {
+    if (event.pointerType === "mouse") hideTooltip();
+  });
+}
+
+if (typeof module !== "undefined" && module.exports) module.exports = {calculateRecharge, selectDateRange, bindChartPointerInteractions};
 
 (() => {
   if (typeof document === "undefined") return;
@@ -212,6 +240,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
   }
   document.addEventListener("pointerdown", (event) => {
     if (!rangePopover.hidden && !rangeSelector.contains(event.target)) closeRange();
+    if (!container.contains(event.target)) hideTooltip();
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !rangePopover.hidden) {
@@ -221,6 +250,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
   });
   document.addEventListener("focusin", (event) => {
     if (!rangePopover.hidden && !rangeSelector.contains(event.target)) closeRange();
+    if (!container.contains(event.target)) hideTooltip();
   });
   startInput.addEventListener("input", clearRangeError);
   endInput.addEventListener("input", clearRangeError);
@@ -250,16 +280,18 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
     closeRange({restoreFocus: true});
     drawChart({animate: true});
   });
-  chart.addEventListener("pointermove", (event) => {
-    if (!chartState || curveAnimation?.playState === "running") return;
-    const position = event.clientX - chart.getBoundingClientRect().left;
+  bindChartPointerInteractions(chart, (event) => {
+    if (!chartState) return;
+    curveAnimation?.finish();
+    const bounds = chart.getBoundingClientRect();
+    if (!bounds.width) return;
+    const position = (event.clientX - bounds.left) * chartState.width / bounds.width;
     let closest = 0;
     for (let index = 1; index < chartState.points.length; index += 1) {
       if (Math.abs(chartState.x(chartState.points[index]) - position) < Math.abs(chartState.x(chartState.points[closest]) - position)) closest = index;
     }
     showReading(closest);
-  });
-  chart.addEventListener("pointerleave", hideTooltip);
+  }, hideTooltip);
   chart.addEventListener("blur", hideTooltip);
   chart.addEventListener("keydown", (event) => {
     if (!chartState || curveAnimation?.playState === "running" || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
