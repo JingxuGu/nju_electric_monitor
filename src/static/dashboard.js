@@ -1,13 +1,13 @@
 "use strict";
 
-function calculateRecharge({average, price, days}) {
-  if (![average, price, days].every(Number.isFinite) ||
+function calculateRecharge({balance, average, price, days}) {
+  if (![balance, average, price, days].every(Number.isFinite) ||
       average <= 0 || price < 0.01 || price > 100 ||
       !Number.isInteger(days) || days < 1 || days > 365) return null;
   const required = average * days * price;
   // Round currency only to cents; do not include existing electricity.
   const amount = Math.round((required + Number.EPSILON) * 100) / 100;
-  return {amount, days: amount / price / average};
+  return {amount, days: Math.max(0, balance + amount / price) / average};
 }
 
 function selectDateRange(readings, startDate, endDate) {
@@ -360,7 +360,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
     rechargeAmount.textContent = plan ? plan.amount.toFixed(2) : "—";
     document.getElementById("recharge-currency").hidden = !plan;
     document.getElementById("recharge-caption").textContent = "按目标天数计算，金额精确到分";
-    document.getElementById("recharge-days-label").textContent = "本次充值预估可用";
+    document.getElementById("recharge-days-label").textContent = "充值后总计可用";
     rechargeDays.textContent = plan ? plan.days.toFixed(1) : "—";
     if (!validDays) {
       rechargeStatus.textContent = "请输入 1–365 之间的整数天数。";
@@ -371,7 +371,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
     } else if (data.daily_usage <= 0) {
       rechargeStatus.textContent = "近期没有记录到电量减少，暂时无法估算使用天数。";
     } else if (plan) {
-      rechargeStatus.textContent = "按 " + price.toFixed(3).replace(/0+$/, "").replace(/\.$/, "") + " 元/度，购买约 " + days + " 天用电量；仅计算本次充值，不含当前余量。";
+      rechargeStatus.textContent = "按 " + price.toFixed(3).replace(/0+$/, "").replace(/\.$/, "") + " 元/度，购买约 " + days + " 天用电量；总可用天数包含当前余量。";
     }
   }
   daysInput.addEventListener("input", updateRecharge);
