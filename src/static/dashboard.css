@@ -612,7 +612,14 @@ h2 {
   width: 100%;
   height: 100%;
   overflow: visible;
-  touch-action: pan-y
+  touch-action: pan-y;
+  outline: none;
+  -webkit-tap-highlight-color: transparent
+}
+
+.chart-container>svg:focus-visible {
+  outline: 3px solid #91b9a4;
+  outline-offset: 4px
 }
 
 .chart-grid {
