@@ -1,13 +1,13 @@
 "use strict";
 
-function calculateRecharge({balance, average, price, days}) {
-  if (![balance, average, price, days].every(Number.isFinite) ||
+function calculateRecharge({average, price, days}) {
+  if (![average, price, days].every(Number.isFinite) ||
       average <= 0 || price < 0.01 || price > 100 ||
       !Number.isInteger(days) || days < 1 || days > 365) return null;
-  const required = Math.max(0, average * days - balance) * price;
-  // Avoid adding another 10 yuan for floating-point noise at a round amount.
-  const amount = Math.max(0, Math.ceil((required - 1e-9) / 10) * 10);
-  return {amount, days: Math.max(0, balance + amount / price) / average};
+  const required = average * days * price;
+  // Round currency only to cents; do not include existing electricity.
+  const amount = Math.round((required + Number.EPSILON) * 100) / 100;
+  return {amount, days: amount / price / average};
 }
 
 function selectDateRange(readings, startDate, endDate) {
@@ -315,12 +315,10 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
     daysInput.setAttribute("aria-invalid", String(!validDays));
     priceInput.setAttribute("aria-invalid", String(!validPrice));
     const plan = validDays && validPrice ? calculateRecharge({balance: data.balance, average: data.daily_usage, price, days}) : null;
-    const covered = plan !== null && plan.amount === 0;
-    rechargeAmount.textContent = covered ? "无需充值" : plan ? String(plan.amount) : "—";
-    rechargeAmount.classList.toggle("is-covered", covered);
-    document.getElementById("recharge-currency").hidden = !plan || covered;
-    document.getElementById("recharge-caption").textContent = covered ? "现有电量已覆盖目标天数" : "补足目标天数，向上取整到 10 元";
-    document.getElementById("recharge-days-label").textContent = plan && !covered ? "充值后预估可用" : "当前预估可用";
+    rechargeAmount.textContent = plan ? plan.amount.toFixed(2) : "—";
+    document.getElementById("recharge-currency").hidden = !plan;
+    document.getElementById("recharge-caption").textContent = "按目标天数计算，金额精确到分";
+    document.getElementById("recharge-days-label").textContent = "本次充值预估可用";
     rechargeDays.textContent = plan ? plan.days.toFixed(1) : "—";
     if (!validDays) {
       rechargeStatus.textContent = "请输入 1–365 之间的整数天数。";
@@ -331,7 +329,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
     } else if (data.daily_usage <= 0) {
       rechargeStatus.textContent = "近期没有记录到电量减少，暂时无法估算使用天数。";
     } else if (plan) {
-      rechargeStatus.textContent = plan.amount === 0 ? "现有电量预计已覆盖目标天数，暂时无需充值。" : "按 " + price.toFixed(3).replace(/0+$/, "").replace(/\.$/, "") + " 元/度，补足未来 " + days + " 天；实际使用时长随用电量变化。";
+      rechargeStatus.textContent = "按 " + price.toFixed(3).replace(/0+$/, "").replace(/\.$/, "") + " 元/度，购买约 " + days + " 天用电量；仅计算本次充值，不含当前余量。";
     }
   }
   daysInput.addEventListener("input", updateRecharge);
