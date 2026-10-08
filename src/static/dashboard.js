@@ -23,6 +23,37 @@ function selectDateRange(readings, startDate, endDate) {
   return readings.filter((row) => row.timestamp >= start && row.timestamp < endExclusive);
 }
 
+function smoothLinePath(points) {
+  if (!points.length) return "";
+  const number = (value) => value.toFixed(2);
+  let path = "M" + number(points[0].x) + " " + number(points[0].y);
+  if (points.length === 1) return path;
+  const slopes = points.slice(1).map((point, index) =>
+    (point.y - points[index].y) / (point.x - points[index].x));
+  // Limit tangents to adjacent slopes: the curve passes through every reading
+  // without inventing peaks or dipping below either endpoint, even after recharge.
+  const tangents = points.map((_, index) => {
+    if (index === 0) return slopes[0];
+    if (index === points.length - 1) return slopes[index - 1];
+    const left = slopes[index - 1];
+    const right = slopes[index];
+    return left * right > 0 ? Math.sign(left) * Math.min(Math.abs(left), Math.abs(right)) : 0;
+  });
+  for (let index = 1; index < points.length; index += 1) {
+    const previous = points[index - 1];
+    const current = points[index];
+    const step = (current.x - previous.x) / 3;
+    if (step <= 0 || !Number.isFinite(tangents[index - 1]) || !Number.isFinite(tangents[index])) {
+      path += " L" + number(current.x) + " " + number(current.y);
+      continue;
+    }
+    path += " C" + number(previous.x + step) + " " + number(previous.y + step * tangents[index - 1]) +
+      " " + number(current.x - step) + " " + number(current.y - step * tangents[index]) +
+      " " + number(current.x) + " " + number(current.y);
+  }
+  return path;
+}
+
 function dailyConsumption(readings) {
   const day = 86400000;
   const offset = 8 * 3600000;
@@ -81,7 +112,7 @@ function bindChartPointerInteractions(chart, showAtPointer, hideTooltip) {
   });
 }
 
-if (typeof module !== "undefined" && module.exports) module.exports = {calculateRecharge, selectDateRange, bindChartPointerInteractions, dailyConsumption};
+if (typeof module !== "undefined" && module.exports) module.exports = {calculateRecharge, selectDateRange, bindChartPointerInteractions, dailyConsumption, smoothLinePath};
 
 (() => {
   if (typeof document === "undefined") return;
@@ -208,7 +239,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = {calculate
           class: "chart-axis",
         }, dateFormatter.format(new Date(timestamp)).replace("/", ".")));
       }
-      const path = points.map((point, index) => (index ? "L" : "M") + x(point).toFixed(2) + " " + y(point.balance).toFixed(2)).join(" ");
+      const path = smoothLinePath(points.map((point) => ({x: x(point), y: y(point.balance)})));
       const bottom = height - plot.bottom;
       const series = svgElement("g", {class: "chart-series", "aria-hidden": "true"});
       series.append(
